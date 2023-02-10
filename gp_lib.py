@@ -50,6 +50,26 @@ class TestFunctions:
         x2 = x*x
         return np.sum(x2*x2 - 16*x2 + 5*x, axis=0)/2
 
+    def himmelblau(x):
+        """Defined only for 2D inputs."""
+        if x.ndim != 2:
+            raise ValueError('x must have to dimensions.')
+        y = x[1]
+        x = x[0]
+        ret = (x*x + y - 11)**2
+        ret += (x + y*y - 7)**2
+        return ret
+
+    def eggholder(x):
+        """."""
+        if x.ndim != 2:
+            raise ValueError('x must have to dimensions.')
+        y = x[1]
+        x = x[0]
+        ret = (y+47)*np.sin(np.sqrt(np.abs(x/2 + y+47)))
+        ret += x*np.sin(np.sqrt(np.abs(x - y+47)))
+        return ret
+
 
 class FeatureFuncs:
     """."""
@@ -269,7 +289,8 @@ class Regressions:
         ainv = np.linalg.inv(cov_data)
         cov_infer -= cov @ ainv @ cov.T
         mu_infer += cov @ ainv @ (y_data - mu_data)
-        return scystat.multivariate_normal(mu_infer, cov_infer)
+        return scystat.multivariate_normal(
+            mu_infer, cov_infer, allow_singular=True)
 
 
 class Animate:
@@ -391,7 +412,7 @@ class Animate:
         # return animate(0)
         return FuncAnimation(
             fig, animate, frames=np.arange(x_data.size+1),
-            repeat=True, repeat_delay=1000, interval=1000)
+            repeat=True, repeat_delay=3000, interval=1000)
 
     @staticmethod
     def distribution(x, dist, feature_func):
@@ -432,7 +453,11 @@ class Animate:
         else:
             fig, (ax, ay) = mplt.subplots(
                 2, 1, figsize=(5, 3), sharex=True, height_ratios=[1, 3])
-            ax.plot(x, phix, 'k', lw=1)
+
+            maxi = np.abs(phix).max(axis=0)
+            maxi[maxi == 0] = 1
+            phixn = phix/maxi[None, :]
+            ax.plot(x, phixn, 'k', lw=1)
             ax.set_ylabel('Basis')
 
         def animate(frame):
@@ -484,7 +509,7 @@ class Animate:
     #     return animate(0)
         return FuncAnimation(
             fig, animate, frames=frames,
-            repeat=True, repeat_delay=20, interval=20)
+            repeat=True, repeat_delay=200, interval=20)
 
 
 def draw_samples_from_gp(x_samples, kernel_func=None, nsamples=10):
