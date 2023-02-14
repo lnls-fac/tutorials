@@ -175,7 +175,7 @@ class KernelFuncs:
 
         """
         dx2 = KernelFuncs._calc_distance_squared(x1, x2, leng*np.sqrt(2*alpha))
-        return (1 + dx2)**(-alpha)
+        return sigma*(1 + dx2)**(-alpha)
 
     @staticmethod
     def matern3over2(x1, x2, leng=1, sigma=1):
@@ -347,7 +347,7 @@ class Animate:
             repeat=False, repeat_delay=2, interval=1000, init_func=lambda: [])
 
     @staticmethod
-    def regression(
+    def parametric_regression(
             x, x_data, y_data, prior, feature_func, sigma_err=1, truth=None):
         """."""
         dist = prior
@@ -415,7 +415,7 @@ class Animate:
             repeat=True, repeat_delay=3000, interval=1000)
 
     @staticmethod
-    def distribution(x, dist, feature_func):
+    def parametric_distribution(x, dist, feature_func):
         """."""
         frames = np.arange(40)
         phix = feature_func(x)
@@ -499,6 +499,71 @@ class Animate:
                 ay.plot(
                     x, xd, '--', color=f'C{i:d}', lw=1)[0]
                 for i, xd in enumerate((phix @ wr).T, 1)]
+            lines[0].set_label('samples')
+
+            ay.legend(
+                loc='lower center', bbox_to_anchor=(0.5, 0), fontsize='small')
+            fig.tight_layout()
+            return []
+
+    #     return animate(0)
+        return FuncAnimation(
+            fig, animate, frames=frames,
+            repeat=True, repeat_delay=200, interval=20)
+
+    @staticmethod
+    def gp_distribution(x, dist, name='Kernel'):
+        """."""
+        frames = np.arange(40)
+        cov = dist.cov_object.covariance
+        muf = dist.mean
+        stdf = np.sqrt(np.diag(cov))
+
+        # Create rotating samples from the distribution:
+        # First define the levels we want:
+        lev_smpl = -2*np.log(np.logspace(-4, -2, 3)*0.95)
+        # Create normalized random vectors for rotation:
+        N = muf.size
+        nvec = lev_smpl.size
+        v = np.random.randn(N, nvec, 2)  # create 2 lists of nvec vectors
+        v[..., 0] /= np.linalg.norm(v[..., 0], axis=0)  # normalize list-1
+        # make ith vector of list-2 orthogonal to ith vector of list-1:
+        v[..., 1] -= v[..., 0]*np.sum(v[..., 0]*v[..., 1], axis=0)
+        v[..., 1] /= np.linalg.norm(v[..., 1], axis=0)  # normalize list-2
+
+        # Create transformation matrix from v to w
+        chol_cov = np.linalg.cholesky(cov + 1e-10*np.eye(cov.shape[0]))
+
+        fig, (ax, ay) = mplt.subplots(
+            1, 2, figsize=(7, 3), sharex=True, width_ratios=[1, 3])
+
+        x_, y_ = np.meshgrid(x, x)
+        ax.pcolormesh(x_, y_, cov)
+        ax.set_ylabel('x')
+        ax.set_xlabel('x')
+        ax.set_title(name)
+        ax.set_aspect('equal')
+
+        def animate(frame):
+            # Rotate and transform the vector
+            theta = 2*np.pi * frame/frames.size
+            rot = np.array([[np.cos(theta)], [np.sin(theta)]])
+            vr = (v @ rot).squeeze()
+            vr *= lev_smpl[None, :]
+            wr = dist.mean[:, None] + chol_cov @ vr
+
+            ay.clear()
+            ay.set_xlabel('x')
+            ay.set_ylabel(r'$y = f(x) + \varepsilon$')
+
+            ay.plot(x, muf, label=r'$\mathbb{E}(f(x))$')
+            ay.fill_between(
+                x, muf+1.96*stdf, muf-1.96*stdf, color='C0', alpha=0.2,
+                label='95% confidence')
+            lines = [
+                ay.plot(
+                    x, xd, '--', color=f'C{i:d}', lw=1)[0]
+                for i, xd in enumerate(wr.T, 1)]
             lines[0].set_label('samples')
 
             ay.legend(
