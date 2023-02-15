@@ -138,7 +138,7 @@ class KernelFuncs:
 
         """
         dx2 = KernelFuncs._calc_distance_squared(x1, x2, leng*np.sqrt(2))
-        return sigma*np.exp(-dx2)
+        return sigma**2*np.exp(-dx2)
 
     @staticmethod
     def exponential(x1, x2, leng=1, sigma=1):
@@ -149,7 +149,7 @@ class KernelFuncs:
 
         """
         dx = np.sqrt(KernelFuncs._calc_distance_squared(x1, x2, leng))
-        return sigma*np.exp(-dx)
+        return sigma**2*np.exp(-dx)
 
     @staticmethod
     def sine_squared(x1, x2, leng=1, sigma=1, period=1):
@@ -157,7 +157,7 @@ class KernelFuncs:
         dx = np.sqrt(KernelFuncs._calc_distance_squared(x1, x2, leng=1))
         sin2_dx = np.sin((np.pi/period)*dx)
         sin2_dx *= sin2_dx
-        return sigma*np.exp(-(2/leng/leng)*sin2_dx)
+        return sigma**2*np.exp(-(2/leng/leng)*sin2_dx)
     #     # The implementation below makes use of sin(x)^2 = (1-cos(2x))/2
     #     # it might be faster then the one above
     #     msin2_dx = np.cos((2*np.pi/period)*dx)
@@ -175,7 +175,7 @@ class KernelFuncs:
 
         """
         dx2 = KernelFuncs._calc_distance_squared(x1, x2, leng*np.sqrt(2*alpha))
-        return sigma*(1 + dx2)**(-alpha)
+        return sigma**2*(1 + dx2)**(-alpha)
 
     @staticmethod
     def matern3over2(x1, x2, leng=1, sigma=1):
@@ -183,7 +183,7 @@ class KernelFuncs:
         dx = np.sqrt(KernelFuncs._calc_distance_squared(x1, x2, leng))
         dx *= np.sqrt(3)
         ker = dx + 1
-        ker *= sigma*np.exp(-dx)
+        ker *= sigma**2*np.exp(-dx)
         return ker
 
     @staticmethod
@@ -192,7 +192,7 @@ class KernelFuncs:
         dx = np.sqrt(KernelFuncs._calc_distance_squared(x1, x2, leng))
         dx *= np.sqrt(5)
         ker = 1 + dx + dx*dx/3
-        ker *= sigma*np.exp(-dx)
+        ker *= sigma**2*np.exp(-dx)
         return ker
 
     @staticmethod
@@ -521,7 +521,7 @@ class Animate:
 
         # Create rotating samples from the distribution:
         # First define the levels we want:
-        lev_smpl = -2*np.log(np.logspace(-4, -2, 3)*0.95)
+        lev_smpl = -2*np.log(np.logspace(-3, -1, 3)*0.95)
         # Create normalized random vectors for rotation:
         N = muf.size
         nvec = lev_smpl.size
@@ -576,6 +576,42 @@ class Animate:
             fig, animate, frames=frames,
             repeat=True, repeat_delay=200, interval=20)
 
+    @staticmethod
+    def gp_regression(
+            x, x_data, y_data, kernel_func, sigma_err=1, truth=None):
+        """."""
+        fig, ay = mplt.subplots(1, 1, figsize=(7, 3))
+
+        def animate(frm):
+            dist = Regressions.non_parametric(
+                x, x_data[:frm], y_data[:frm], kernel_func,
+                noise_var=sigma_err)
+
+            muf = dist.mean
+            stdf = dist.cov_object.covariance
+            stdf = np.sqrt(np.diag(stdf))
+
+            ay.clear()
+            ay.set_xlabel('x')
+            ay.set_ylabel('y = f(x) + epsilon')
+            if truth is not None:
+                ay.plot(truth[0], truth[1], 'k--', label='Truth')
+
+            ay.plot(x, muf, label='expected f(x)')
+            ay.fill_between(
+                x, muf+1.96*stdf, muf-1.96*stdf, color='C0', alpha=0.2,
+                label='95% confidence')
+            ay.errorbar(
+                x_data[:frm], y_data[:frm], yerr=sigma_err, linestyle='',
+                marker='o', color='k', barsabove=True, label='Data')
+            ay.legend(loc='best', fontsize='x-small')
+            fig.tight_layout()
+            return []
+
+        # return animate(0)
+        return FuncAnimation(
+            fig, animate, frames=np.arange(x_data.size+1),
+            repeat=True, repeat_delay=3000, interval=1000)
 
 def draw_samples_from_gp(x_samples, kernel_func=None, nsamples=10):
     """."""
