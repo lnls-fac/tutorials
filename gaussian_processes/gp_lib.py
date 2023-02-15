@@ -613,6 +613,7 @@ class Animate:
             fig, animate, frames=np.arange(x_data.size+1),
             repeat=True, repeat_delay=3000, interval=1000)
 
+
 def draw_samples_from_gp(x_samples, kernel_func=None, nsamples=10):
     """."""
     if kernel_func is None:
