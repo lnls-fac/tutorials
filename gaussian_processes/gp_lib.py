@@ -344,7 +344,8 @@ class Animate:
 
         return FuncAnimation(
             fig, update, fargs=(post_pdf, ), frames=frames,
-            repeat=False, repeat_delay=2, interval=1000, init_func=lambda: [])
+            repeat=False, repeat_delay=2, interval=1000,
+            init_func=lambda: []), fig
 
     @staticmethod
     def parametric_regression(
@@ -412,7 +413,7 @@ class Animate:
         # return animate(0)
         return FuncAnimation(
             fig, animate, frames=np.arange(x_data.size+1),
-            repeat=True, repeat_delay=3000, interval=1000)
+            repeat=True, repeat_delay=3000, interval=1000), fig
 
     @staticmethod
     def parametric_distribution(x, dist, feature_func):
@@ -509,7 +510,7 @@ class Animate:
     #     return animate(0)
         return FuncAnimation(
             fig, animate, frames=frames,
-            repeat=True, repeat_delay=200, interval=20)
+            repeat=True, repeat_delay=200, interval=20), fig
 
     @staticmethod
     def gp_distribution(x, dist, name='Kernel'):
@@ -574,7 +575,7 @@ class Animate:
     #     return animate(0)
         return FuncAnimation(
             fig, animate, frames=frames,
-            repeat=True, repeat_delay=200, interval=20)
+            repeat=True, repeat_delay=200, interval=20), fig
 
     @staticmethod
     def gp_regression(
@@ -611,7 +612,7 @@ class Animate:
         # return animate(0)
         return FuncAnimation(
             fig, animate, frames=np.arange(x_data.size+1),
-            repeat=True, repeat_delay=3000, interval=1000)
+            repeat=True, repeat_delay=3000, interval=1000), fig
 
 
 def draw_samples_from_gp(x_samples, kernel_func=None, nsamples=10):
