@@ -292,6 +292,14 @@ class Regressions:
         return scystat.multivariate_normal(
             mu_infer, cov_infer, allow_singular=True)
 
+    @staticmethod
+    def calc_log_marginal_likelihood(y, cov, noise_var):
+        cov = cov + np.eye(cov.shape[0])*noise_var
+        loglik = np.dot(np.dot(y, np.linalg.inv(cov)), y)
+        loglik += np.log(np.linalg.det(cov)) + np.log(2*np.pi)
+        loglik /= 2
+        return -loglik
+
 
 class Animate:
     """."""
